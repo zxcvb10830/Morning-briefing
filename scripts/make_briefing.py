@@ -35,7 +35,15 @@ def zh(text):
         out = _tr.translate(text)
         return out.strip().rstrip("。.") if out else None
     except Exception as e:
-        print("translate fail", e, file=sys.stderr); return None
+        print("google translate fail, trying MyMemory:", str(e)[:80], file=sys.stderr)
+    try:
+        r = requests.get("https://api.mymemory.translated.net/get", params={"q": text[:450], "langpair": "en|zh-TW"}, headers=UA, timeout=20).json()
+        out = (r.get("responseData") or {}).get("translatedText")
+        if r.get("responseStatus") == 200 and out and "MYMEMORY" not in out.upper():
+            return out.strip().rstrip("。.")
+    except Exception as e:
+        print("mymemory fail", e, file=sys.stderr)
+    return None
 
 def entry_date(e):
     try: return email.utils.parsedate_to_datetime(e.published).astimezone(dt.timezone(dt.timedelta(hours=-5))).date()
