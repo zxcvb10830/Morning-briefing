@@ -1,0 +1,29 @@
+name: Morning briefing
+on:
+  schedule:
+    # 05:00 Asia/Taipei (UTC+8) Mon-Fri = 21:00 UTC the previous day, i.e. Sun-Thu in UTC.
+    # Cron is evaluated in UTC: day-of-week 0-4 = Sun,Mon,Tue,Wed,Thu.
+    - cron: '0 21 * * 0-4'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: morning-briefing
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python scripts/make_briefing.py
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add morning-briefing.mp3
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "Update morning briefing [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
